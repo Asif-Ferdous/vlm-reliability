@@ -17,6 +17,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{graphicx}
+\graphicspath{{figures/}{./}}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{natbib}
@@ -294,6 +295,16 @@ $0.99 \rightarrow 0.92$ (s2) $\rightarrow$ \textbf{0.22} (s3), approaching the
 at slightly lower absolute accuracy: 0.97 clean, 0.74--0.97 across most
 conditions, collapsing to \textbf{0.42} at low light s3.
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/fig2_accuracy_both.png}
+\caption{Accuracy as a function of corruption severity for both models. Five of
+six degradation families produce little accuracy loss; low light (green)
+collapses toward the four-way chance rate (dotted red) in both models. The
+replication across two independent model families is the point of this figure.}
+\label{fig:accuracy}
+\end{figure}
+
 \paragraph{Finding 1.} \emph{Accuracy in small VLMs is largely insensitive to
 compression, blur, glare, tilt and resampling, but collapses under severe
 underexposure. This replicates across both models.}
@@ -336,6 +347,20 @@ rotation s3      & 0.99 [0.97, 1.00] & 0.50 [0.50, 0.50] & \textbf{0.98 [0.95, 1
 In clean, low\_light s1, resample s1 and rotation s3 the two intervals do not
 overlap: the difference is statistically robust at this sample size.
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/fig1_auroc_comparison.png}
+\caption{Error-detection AUROC for verbalized (red) versus internal (blue)
+confidence in Qwen2-VL-2B, across all conditions where AUROC is defined. Dashed
+line marks chance (0.5). Verbalized confidence sits at or near chance in most
+conditions and falls \emph{below} it under low light s1; internal confidence
+from the same predictions ranges 0.82--0.99. The two JPEG conditions where
+verbalized AUROC reaches 1.00 have near-perfect accuracy and correspondingly few
+errors, so those values rest on a handful of points and should not be read as
+evidence that verbalized confidence works there.}
+\label{fig:headline}
+\end{figure}
+
 \paragraph{Finding 3 (headline).} \emph{The same model that cannot state a
 useful confidence number nonetheless encodes a strong internal signal of its own
 correctness.}
@@ -376,10 +401,55 @@ internal confidence falls 0.057. Internal confidence is roughly twice as
 responsive, but both are negligible against the accuracy drop. Both models'
 internal AUROC intervals include 0.5 at this severity.
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.72\textwidth]{figures/fig3_divergence.png}
+\caption{Qwen2-VL-2B under increasing low light. Accuracy (black) falls from
+0.99 to 0.22 while verbalized confidence (red) moves 0.029 and internal
+confidence (blue) moves 0.057. Internal confidence is the more responsive of the
+two, but the gap that opens between accuracy and both signals is the failure
+mode this paper cautions against.}
+\label{fig:divergence}
+\end{figure}
+
 \paragraph{Finding 5.} \emph{Neither signal tracks catastrophic failure.
 Internal confidence is a useful deferral signal under mild-to-moderate
 degradation and loses that property precisely under the severe degradation where
 it would matter most. This replicates across both models.}
+
+\subsection{Calibration error hides the difference between the two signals}
+
+Expected Calibration Error is low for both signals in most conditions (roughly
+0.02--0.12), which follows mechanically from the model being both accurate and
+confident nearly everywhere. ECE rises sharply only at low light s3: 0.650 for
+verbalized and 0.606 for internal confidence.
+
+We report ECE for comparability with prior VLM calibration work, but in this
+setting it is the \emph{less} informative metric. Because verbalized confidence
+is nearly constant, its ECE is dominated by the accuracy of the condition rather
+than by any property of the confidence signal itself.
+Figure~\ref{fig:reliability} makes this concrete: on clean images the two
+signals are visually indistinguishable in a reliability diagram, despite an
+error-detection AUROC gap of more than 0.4 on the very same predictions.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig4_reliability.png}
+\caption{Reliability diagrams for both confidence signals on clean images
+(Qwen2-VL-2B). Both distributions are concentrated in $[0.8, 1.0]$ and both sit
+near the diagonal, because the model is 99\% accurate here and both signals are
+correspondingly high. \textbf{The reliability diagram cannot distinguish the two
+signals}, even though their error-detection AUROC differs by more than 0.4
+(0.49 versus 0.92). We include this as a methodological caution: calibration-error
+measures assess whether confidence \emph{magnitude} matches accuracy, not whether
+confidence \emph{discriminates} correct from incorrect answers. A signal with
+near-zero variance can appear well calibrated while carrying no usable
+information.}
+\label{fig:reliability}
+\end{figure}
+
+Error-detection AUROC is the more diagnostic measure in this regime, and we
+recommend it for future work on verbalized confidence in small VLMs.
 
 \subsection{Post-hoc temperature scaling}
 
